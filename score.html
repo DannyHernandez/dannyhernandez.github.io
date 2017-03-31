@@ -5,8 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="success.css">
 
+    <meta property="og:url"           content="http://www.aforeseeablefuture.org" />
+    <meta property="og:type"          content="website" />
+    <meta property="og:title"         content="Foreseeable Future" />
+    <meta property="og:description"   content="Predicting the future isn't a superpower, it's the primary skill we use when we decide what to build. Like any skill, you can get better with practice." />
+    <meta property="og:image"         content="http://www.aforeseeablefuture.com/logo.png" />
+    <meta property="og:image:width"   content="1200" />
+    <meta property="og:image:height"  content="630" />
+    <meta property="fb:app_id"        content="248388065568194" />
 
-    <title>Share your pledge!</title> <!-- apparently rails rewrites this? It should probably just prefix it instead?-->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@hernandez_danny" />
+    <meta name="twitter:title" content="Foreseeable Future" />
+    <meta name="twitter:description" content="Predicting the future isn't a superpower, it's the primary skill we use when we decide what to build. Like any skill, you can get better with practice." />
+    <meta name="twitter:image" content="http://www.pledgeaction.org/icon.png" />
+
+
 
     <script src="https://use.fontawesome.com/38cda031e5.js"></script>
       <!-- HORRIBLE HACK! dont inline this js -->
@@ -66,10 +80,10 @@
             DEG_TO_RAD = PI / 180,
             RAD_TO_DEG = 180 / PI,
             colors = [
-              ["#FFF", "#FAE164"],
-              ["#FFF", "#FF4621"],
-              ["#FFF", "#0066FF"],
-              ["#FFF", "#64E178"],
+              ["#FFF", "#34E5FA"],
+              ["#FFF", "#F865AA"],
+              ["#FFF", "#653056"],
+              ["#FFF", "#B294C8"],
             ];
 
           function Vector2(_x, _y) {
@@ -434,7 +448,8 @@
   <script>
     window.fbAsyncInit = function() {
       FB.init({
-        appId      : '413275755688992',
+        //TODO make an app on facebook, and add it
+        appId      : '248388065568194',
         xfbml      : true,
         version    : 'v2.8'
       });
@@ -546,9 +561,11 @@ function scoreAnswers (factor){
 
         var lowerBound = parsedAnswer[0]
         var upperBound = parsedAnswer[1]
-        var geometricMean = Math.sqrt(upperBound * lowerBound)
-        var accuracy = accuracy * Math.max(geometricMean / answerKey[key], answerKey[key] / geometricMean)
-        console.log(accuracy, lowerBound, upperBound, geometricMean, answerKey[key], key)
+        // var geometricMean = Math.sqrt(upperBound * lowerBound)
+        accuracy = accuracy * (upperBound / lowerBound)
+        // var accuracy = accuracy * Math.max(geometricMean / answerKey[key], answerKey[key] / geometricMean)
+        // console.log(accuracy, lowerBound, upperBound, geometricMean, answerKey[key], key)
+      // }
       }
     }
   }
@@ -635,8 +652,8 @@ $(document).ready(function(){
     $('#factor').text("Make your confidence intervals  " + factor + " as big" )
     $('#factor_text').text("That would have made you well calibrated here (80% prediction => 80% in reality). Once you are calibrated any confusion or awkwardness you have about probabilities and predictions should evaporate." )
   }
-  $('#accuracy').text("The center of your intervals was on average a factor of " + accuracy + "x off the true answer" )
-  $('#accuracy_text').text("Being calibrated is the low hanging fruit of predicting the future, but being able to predict something will fit into a narrow band of outcomes (accuracy) is incredibly valuable. Gaining accuracy in the domains you actually care about is a life long pursuit. Calibration specific to your organization, domain, etc can help. danny@aforeseeablefuture.com is down to help." )
+  $('#accuracy').text("Your upper bounds were " + accuracy + "x your lower bounds" )
+  $('#accuracy_text').text("(On average). Being calibrated is the low hanging fruit of predicting the future, but being able to predict something will fit into a narrow band of outcomes (accuracy) is incredibly valuable. Gaining accuracy in the domains you actually care about is a life long pursuit. Calibration specific to your domain/organization can help. danny@aforeseeablefuture.com can show you how." )
 })
 
 </script>
@@ -653,7 +670,7 @@ $(document).ready(function(){
 
       <section class="share">
         <!-- <h1>You rock!</h1> -->
-        <h2>Predicting the future can be scary and intense, but you are well on your way.</h2>
+        <h2>Predicting the future can be scary and intense, but you are well on your way. Don't leave your friends behind</h2>
 
         <div class="share-buttons">
 
@@ -691,17 +708,10 @@ $(document).ready(function(){
       <div class="step">
         <div class="step__number"></div>
         <div class="step__content">
-          <div class="step__headline" id=accuracy>Accuracy</div>
-          <div class="step__detail" id=accuracy_text><a href="">Calculations on your accuracy</a>. </div>
+          <div class="step__headline" id=accuracy></div>
+          <div class="step__detail" id=accuracy_text></a>. </div>
         </div>
       </div>
-      <!-- <div class="step">
-        <div class="step__number"></div>
-        <div class="step__content">
-          <div class="step__headline">More on Predictions</div>
-          <div class="step__detail"><a href="">Checkout the rest of Danny's prediction recommendations on Medium, Twitter, and Whale</a>. </div>
-        </div>
-      </div> -->
     </section>
   </div>
 </body>

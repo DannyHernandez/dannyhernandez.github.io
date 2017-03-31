@@ -72,6 +72,8 @@ a:hover {
 
 .step__content {
   float: left;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .step__headline {
