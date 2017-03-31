@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="success.css">
+
+
+    <title>Share your pledge!</title> <!-- apparently rails rewrites this? It should probably just prefix it instead?-->
+
+    <script src="https://use.fontawesome.com/38cda031e5.js"></script>
+      <!-- HORRIBLE HACK! dont inline this js -->
+    <script>
+        var retina = window.devicePixelRatio,
+
+          // Math shorthands
+          PI = Math.PI,
+          sqrt = Math.sqrt,
+          round = Math.round,
+          random = Math.random,
+          cos = Math.cos,
+          sin = Math.sin,
+
+          // Local WindowAnimationTiming interface
+          rAF = window.requestAnimationFrame,
+          cAF = window.cancelAnimationFrame || window.cancelRequestAnimationFrame,
+          _now = Date.now || function() {
+            return new Date().getTime();
+          };
+
+        // Local WindowAnimationTiming interface polyfill
+        (function(w) {
+          /**
+           * Fallback implementation.
+           */
+          var prev = _now();
+
+          function fallback(fn) {
+            var curr = _now();
+            var ms = Math.max(0, 16 - (curr - prev));
+            var req = setTimeout(fn, ms);
+            prev = curr;
+            return req;
+          }
+
+          /**
+           * Cancel.
+           */
+          var cancel = w.cancelAnimationFrame || w.webkitCancelAnimationFrame || w.clearTimeout;
+
+          rAF = w.requestAnimationFrame || w.webkitRequestAnimationFrame || fallback;
+
+          cAF = function(id) {
+            cancel.call(w, id);
+          };
+        }(window));
+
+        document.addEventListener("DOMContentLoaded", function() {
+          var speed = 50,
+            duration = (1.0 / speed),
+            confettiRibbonCount = 11,
+            ribbonPaperCount = 1,
+            ribbonPaperDist = 8.0,
+            ribbonPaperThick = 8.0,
+            confettiPaperCount = 95,
+            DEG_TO_RAD = PI / 180,
+            RAD_TO_DEG = 180 / PI,
+            colors = [
+              ["#FFF", "#FAE164"],
+              ["#FFF", "#FF4621"],
+              ["#FFF", "#0066FF"],
+              ["#FFF", "#64E178"],
+            ];
+
+          function Vector2(_x, _y) {
+            this.x = _x, this.y = _y;
+            this.Length = function() {
+              return sqrt(this.SqrLength());
+            }
+            this.SqrLength = function() {
+              return this.x * this.x + this.y * this.y;
+            }
+            this.Add = function(_vec) {
+              this.x += _vec.x;
+              this.y += _vec.y;
+            }
+            this.Sub = function(_vec) {
+              this.x -= _vec.x;
+              this.y -= _vec.y;
+            }
+            this.Div = function(_f) {
+              this.x /= _f;
+              this.y /= _f;
+            }
+            this.Mul = function(_f) {
+              this.x *= _f;
+              this.y *= _f;
+            }
+            this.Normalize = function() {
+              var sqrLen = this.SqrLength();
+              if (sqrLen != 0) {
+                var factor = 1.0 / sqrt(sqrLen);
+                this.x *= factor;
+                this.y *= factor;
+              }
+            }
+            this.Normalized = function() {
+              var sqrLen = this.SqrLength();
+              if (sqrLen != 0) {
+                var factor = 1.0 / sqrt(sqrLen);
+                return new Vector2(this.x * factor, this.y * factor);
+              }
+              return new Vector2(0, 0);
+            }
+          }
+          Vector2.Lerp = function(_vec0, _vec1, _t) {
+            return new Vector2((_vec1.x - _vec0.x) * _t + _vec0.x, (_vec1.y - _vec0.y) * _t + _vec0.y);
+          }
+          Vector2.Distance = function(_vec0, _vec1) {
+            return sqrt(Vector2.SqrDistance(_vec0, _vec1));
+          }
+          Vector2.SqrDistance = function(_vec0, _vec1) {
+            var x = _vec0.x - _vec1.x;
+            var y = _vec0.y - _vec1.y;
+            return (x * x + y * y + z * z);
+          }
+          Vector2.Scale = function(_vec0, _vec1) {
+            return new Vector2(_vec0.x * _vec1.x, _vec0.y * _vec1.y);
+          }
+          Vector2.Min = function(_vec0, _vec1) {
+            return new Vector2(Math.min(_vec0.x, _vec1.x), Math.min(_vec0.y, _vec1.y));
+          }
+          Vector2.Max = function(_vec0, _vec1) {
+            return new Vector2(Math.max(_vec0.x, _vec1.x), Math.max(_vec0.y, _vec1.y));
+          }
+          Vector2.ClampMagnitude = function(_vec0, _len) {
+            var vecNorm = _vec0.Normalized;
+            return new Vector2(vecNorm.x * _len, vecNorm.y * _len);
+          }
+          Vector2.Sub = function(_vec0, _vec1) {
+            return new Vector2(_vec0.x - _vec1.x, _vec0.y - _vec1.y, _vec0.z - _vec1.z);
+          }
+
+          function EulerMass(_x, _y, _mass, _drag) {
+            this.position = new Vector2(_x, _y);
+            this.mass = _mass;
+            this.drag = _drag;
+            this.force = new Vector2(0, 0);
+            this.velocity = new Vector2(0, 0);
+            this.AddForce = function(_f) {
+              this.force.Add(_f);
+            }
+            this.Integrate = function(_dt) {
+              var acc = this.CurrentForce(this.position);
+              acc.Div(this.mass);
+              var posDelta = new Vector2(this.velocity.x, this.velocity.y);
+              posDelta.Mul(_dt);
+              this.position.Add(posDelta);
+              acc.Mul(_dt);
+              this.velocity.Add(acc);
+              this.force = new Vector2(0, 0);
+            }
+            this.CurrentForce = function(_pos, _vel) {
+              var totalForce = new Vector2(this.force.x, this.force.y);
+              var speed = this.velocity.Length();
+              var dragVel = new Vector2(this.velocity.x, this.velocity.y);
+              dragVel.Mul(this.drag * this.mass * speed);
+              totalForce.Sub(dragVel);
+              return totalForce;
+            }
+          }
+
+          function ConfettiPaper(_x, _y) {
+            this.pos = new Vector2(_x, _y);
+            this.rotationSpeed = (random() * 600 + 800);
+            this.angle = DEG_TO_RAD * random() * 360;
+            this.rotation = DEG_TO_RAD * random() * 360;
+            this.cosA = 1.0;
+            this.size = 5.0;
+            this.oscillationSpeed = (random() * 1.5 + 0.5);
+            this.xSpeed = 40.0;
+            this.ySpeed = (random() * 60 + 50.0);
+            this.corners = new Array();
+            this.time = random();
+            var ci = round(random() * (colors.length - 1));
+            this.frontColor = colors[ci][0];
+            this.backColor = colors[ci][1];
+            for (var i = 0; i < 4; i++) {
+              var dx = cos(this.angle + DEG_TO_RAD * (i * 90 + 45));
+              var dy = sin(this.angle + DEG_TO_RAD * (i * 90 + 45));
+              this.corners[i] = new Vector2(dx, dy);
+            }
+            this.Update = function(_dt) {
+              this.time += _dt;
+              this.rotation += this.rotationSpeed * _dt;
+              this.cosA = cos(DEG_TO_RAD * this.rotation);
+              this.pos.x += cos(this.time * this.oscillationSpeed) * this.xSpeed * _dt
+              this.pos.y += this.ySpeed * _dt;
+              if (this.pos.y > ConfettiPaper.bounds.y) {
+                this.pos.x = random() * ConfettiPaper.bounds.x;
+                this.pos.y = 0;
+              }
+            }
+            this.Draw = function(_g) {
+              if (this.cosA > 0) {
+                _g.fillStyle = this.frontColor;
+              } else {
+                _g.fillStyle = this.backColor;
+              }
+              _g.beginPath();
+              _g.moveTo((this.pos.x + this.corners[0].x * this.size) * retina, (this.pos.y + this.corners[0].y * this.size * this.cosA) * retina);
+              for (var i = 1; i < 4; i++) {
+                _g.lineTo((this.pos.x + this.corners[i].x * this.size) * retina, (this.pos.y + this.corners[i].y * this.size * this.cosA) * retina);
+              }
+              _g.closePath();
+              _g.fill();
+            }
+          }
+          ConfettiPaper.bounds = new Vector2(0, 0);
+
+          function ConfettiRibbon(_x, _y, _count, _dist, _thickness, _angle, _mass, _drag) {
+            this.particleDist = _dist;
+            this.particleCount = _count;
+            this.particleMass = _mass;
+            this.particleDrag = _drag;
+            this.particles = new Array();
+            var ci = round(random() * (colors.length - 1));
+            this.frontColor = colors[ci][0];
+            this.backColor = colors[ci][1];
+            this.xOff = (cos(DEG_TO_RAD * _angle) * _thickness);
+            this.yOff = (sin(DEG_TO_RAD * _angle) * _thickness);
+            this.position = new Vector2(_x, _y);
+            this.prevPosition = new Vector2(_x, _y);
+            this.velocityInherit = (random() * 2 + 4);
+            this.time = random() * 100;
+            this.oscillationSpeed = (random() * 2 + 2);
+            this.oscillationDistance = (random() * 40 + 40);
+            this.ySpeed = (random() * 40 + 80);
+            for (var i = 0; i < this.particleCount; i++) {
+              this.particles[i] = new EulerMass(_x, _y - i * this.particleDist, this.particleMass, this.particleDrag);
+            }
+            this.Update = function(_dt) {
+              var i = 0;
+              this.time += _dt * this.oscillationSpeed;
+              this.position.y += this.ySpeed * _dt;
+              this.position.x += cos(this.time) * this.oscillationDistance * _dt;
+              this.particles[0].position = this.position;
+              var dX = this.prevPosition.x - this.position.x;
+              var dY = this.prevPosition.y - this.position.y;
+              var delta = sqrt(dX * dX + dY * dY);
+              this.prevPosition = new Vector2(this.position.x, this.position.y);
+              for (i = 1; i < this.particleCount; i++) {
+                var dirP = Vector2.Sub(this.particles[i - 1].position, this.particles[i].position);
+                dirP.Normalize();
+                dirP.Mul((delta / _dt) * this.velocityInherit);
+                this.particles[i].AddForce(dirP);
+              }
+              for (i = 1; i < this.particleCount; i++) {
+                this.particles[i].Integrate(_dt);
+              }
+              for (i = 1; i < this.particleCount; i++) {
+                var rp2 = new Vector2(this.particles[i].position.x, this.particles[i].position.y);
+                rp2.Sub(this.particles[i - 1].position);
+                rp2.Normalize();
+                rp2.Mul(this.particleDist);
+                rp2.Add(this.particles[i - 1].position);
+                this.particles[i].position = rp2;
+              }
+              if (this.position.y > ConfettiRibbon.bounds.y + this.particleDist * this.particleCount) {
+                this.Reset();
+              }
+            }
+            this.Reset = function() {
+              this.position.y = -random() * ConfettiRibbon.bounds.y;
+              this.position.x = random() * ConfettiRibbon.bounds.x;
+              this.prevPosition = new Vector2(this.position.x, this.position.y);
+              this.velocityInherit = random() * 2 + 4;
+              this.time = random() * 100;
+              this.oscillationSpeed = random() * 2.0 + 1.5;
+              this.oscillationDistance = (random() * 40 + 40);
+              this.ySpeed = random() * 40 + 80;
+              var ci = round(random() * (colors.length - 1));
+              this.frontColor = colors[ci][0];
+              this.backColor = colors[ci][1];
+              this.particles = new Array();
+              for (var i = 0; i < this.particleCount; i++) {
+                this.particles[i] = new EulerMass(this.position.x, this.position.y - i * this.particleDist, this.particleMass, this.particleDrag);
+              }
+            }
+            this.Draw = function(_g) {
+              for (var i = 0; i < this.particleCount - 1; i++) {
+                var p0 = new Vector2(this.particles[i].position.x + this.xOff, this.particles[i].position.y + this.yOff);
+                var p1 = new Vector2(this.particles[i + 1].position.x + this.xOff, this.particles[i + 1].position.y + this.yOff);
+                if (this.Side(this.particles[i].position.x, this.particles[i].position.y, this.particles[i + 1].position.x, this.particles[i + 1].position.y, p1.x, p1.y) < 0) {
+                  _g.fillStyle = this.frontColor;
+                  _g.strokeStyle = this.frontColor;
+                } else {
+                  _g.fillStyle = this.backColor;
+                  _g.strokeStyle = this.backColor;
+                }
+                if (i == 0) {
+                  _g.beginPath();
+                  _g.moveTo(this.particles[i].position.x * retina, this.particles[i].position.y * retina);
+                  _g.lineTo(this.particles[i + 1].position.x * retina, this.particles[i + 1].position.y * retina);
+                  _g.lineTo(((this.particles[i + 1].position.x + p1.x) * 0.5) * retina, ((this.particles[i + 1].position.y + p1.y) * 0.5) * retina);
+                  _g.closePath();
+                  _g.stroke();
+                  _g.fill();
+                  _g.beginPath();
+                  _g.moveTo(p1.x * retina, p1.y * retina);
+                  _g.lineTo(p0.x * retina, p0.y * retina);
+                  _g.lineTo(((this.particles[i + 1].position.x + p1.x) * 0.5) * retina, ((this.particles[i + 1].position.y + p1.y) * 0.5) * retina);
+                  _g.closePath();
+                  _g.stroke();
+                  _g.fill();
+                } else if (i == this.particleCount - 2) {
+                  _g.beginPath();
+                  _g.moveTo(this.particles[i].position.x * retina, this.particles[i].position.y * retina);
+                  _g.lineTo(this.particles[i + 1].position.x * retina, this.particles[i + 1].position.y * retina);
+                  _g.lineTo(((this.particles[i].position.x + p0.x) * 0.5) * retina, ((this.particles[i].position.y + p0.y) * 0.5) * retina);
+                  _g.closePath();
+                  _g.stroke();
+                  _g.fill();
+                  _g.beginPath();
+                  _g.moveTo(p1.x * retina, p1.y * retina);
+                  _g.lineTo(p0.x * retina, p0.y * retina);
+                  _g.lineTo(((this.particles[i].position.x + p0.x) * 0.5) * retina, ((this.particles[i].position.y + p0.y) * 0.5) * retina);
+                  _g.closePath();
+                  _g.stroke();
+                  _g.fill();
+                } else {
+                  _g.beginPath();
+                  _g.moveTo(this.particles[i].position.x * retina, this.particles[i].position.y * retina);
+                  _g.lineTo(this.particles[i + 1].position.x * retina, this.particles[i + 1].position.y * retina);
+                  _g.lineTo(p1.x * retina, p1.y * retina);
+                  _g.lineTo(p0.x * retina, p0.y * retina);
+                  _g.closePath();
+                  _g.stroke();
+                  _g.fill();
+                }
+              }
+            }
+            this.Side = function(x1, y1, x2, y2, x3, y3) {
+              return ((x1 - x2) * (y3 - y2) - (y1 - y2) * (x3 - x2));
+            }
+          }
+          ConfettiRibbon.bounds = new Vector2(0, 0);
+          confetti = {};
+          confetti.Context = function(id) {
+            var i = 0;
+            var canvas = document.getElementById(id);
+            var canvasParent = canvas.parentNode;
+            var canvasWidth = canvasParent.offsetWidth;
+            var canvasHeight = canvasParent.offsetHeight;
+            canvas.width = canvasWidth * retina;
+            canvas.height = canvasHeight * retina;
+            var context = canvas.getContext('2d');
+            var interval = null;
+            var confettiRibbons = new Array();
+            ConfettiRibbon.bounds = new Vector2(canvasWidth, canvasHeight);
+            for (i = 0; i < confettiRibbonCount; i++) {
+              confettiRibbons[i] = new ConfettiRibbon(random() * canvasWidth, -random() * canvasHeight * 2, ribbonPaperCount, ribbonPaperDist, ribbonPaperThick, 45, 1, 0.05);
+            }
+            var confettiPapers = new Array();
+            ConfettiPaper.bounds = new Vector2(canvasWidth, canvasHeight);
+            for (i = 0; i < confettiPaperCount; i++) {
+              confettiPapers[i] = new ConfettiPaper(random() * canvasWidth, random() * canvasHeight);
+            }
+            this.resize = function() {
+              canvasWidth = canvasParent.offsetWidth;
+              canvasHeight = canvasParent.offsetHeight;
+              canvas.width = canvasWidth * retina;
+              canvas.height = canvasHeight * retina;
+              ConfettiPaper.bounds = new Vector2(canvasWidth, canvasHeight);
+              ConfettiRibbon.bounds = new Vector2(canvasWidth, canvasHeight);
+            }
+            this.start = function() {
+              this.stop()
+              var context = this;
+              this.update();
+            }
+            this.stop = function() {
+              cAF(this.interval);
+            }
+            this.update = function() {
+              var i = 0;
+              context.clearRect(0, 0, canvas.width, canvas.height);
+              for (i = 0; i < confettiPaperCount; i++) {
+                confettiPapers[i].Update(duration);
+                confettiPapers[i].Draw(context);
+              }
+              for (i = 0; i < confettiRibbonCount; i++) {
+                confettiRibbons[i].Update(duration);
+                confettiRibbons[i].Draw(context);
+              }
+              this.interval = rAF(function() {
+                confetti.update();
+              });
+            }
+          }
+          var confetti = new confetti.Context('confetti');
+          confetti.start();
+          window.addEventListener('resize', function(event) {
+            confetti.resize();
+          });
+        });
+
+    </script>
+
+    <script>
+        // TODO: move out inline js
+        $(document).ready(function(){
+          $('.js-share-fb').click(function() {
+            FB.ui({
+              method: 'share',
+              display: 'popup',
+              href: 'http://aforeseeablefuture.com'
+            }, function(response){});
+          });
+
+          $('.js-share-twitter').click(function() {
+            var url = "https://twitter.com/share?textPredicting%20the%20future%20is%20not%20a%20super%20power.%20Start%20training%20now!=&url=http://aforeseeablefuture.com";
+            window.open(url, "", "width=500,height=400,resizable=true").focus();
+          });
+        });
+    </script>
+    <style>
+        .share-buttons > a {
+            text-decoration: none;
+        }
+    </style>
+  </head>
+<body>
+  <script>
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : '413275755688992',
+        xfbml      : true,
+        version    : 'v2.8'
+      });
+      FB.AppEvents.logPageView();
+    };
+
+    (function(d, s, id){
+       var js, fjs = d.getElementsByTagName(s)[0];
+       if (d.getElementById(id)) {return;}
+       js = d.createElement(s); js.id = id;
+       js.src = "//connect.facebook.net/en_US/sdk.js";
+       fjs.parentNode.insertBefore(js, fjs);
+     }(document, 'script', 'facebook-jssdk'));
+  </script>
+
+  <script>
+
+// you got x of y right (target is 80%)
+// if you had made your intervals x amount wider, you would have been calibrated
+// keep that in mindwhen you make forecasts/predictions
+// in order to hit ~80% you needed a range size of x multiples
+
+
+
+var urlParams = new URLSearchParams(window.location.search);
+answerKey = {
+  netflix_pct: 54,
+  fb_dau: 1200000000,
+  ad_spend: 76,
+  why_voice: 61,
+  aws_growth: 55,
+  iphone_sales: 69,
+  search_mkt: 80.5,
+  slack_prod: 32,
+  airbnb_hilton: 1.28,
+  bitcoin_mktcap: 16700000000,
+}
+
+//http://www.aforeseeablefuture.com/?netflix_pct=10-50&fb_dau=300M%20-%201300M&ad_spend=50%20to%2070&why_voice=60&aws_growth=35-70&iphone_sales=50%%20to%2080%&search_mkt=60%20to%2080%&slack_prod=15-40&airbnb_hilton=1.2%20to%201.6&bitcoin_mktcap=10B%20-%2014B
+
+function parseAnswer(answer) {
+  answer = answer.toLowerCase().trim()
+  answer = answer.replace(/thousand/g, "k").replace(/k/g, " k")
+  answer = answer.replace(/million/g, "m").replace(/m/g, " m")
+  answer = answer.replace(/billion/g, "b").replace(/b/g, " b")
+  answer = answer.replace(/to/, " ").replace(/-/, " ").replace(/[^0-9 .kmb]/g,'').trim().split(/(?:,-| )+/)
+  if (answer.length == 1) {
+    return false
+  }
+  if (answer.length == 2) {
+    return [parseFloat(answer[0]), parseFloat(answer[1])]
+  }
+  parsed = []
+  j = 0
+  for (var i = 0; i < answer.length; i++) {
+    // console.log(parsed)
+    if (answer[i] == 'k') {
+      parsed[j] = parsed[j] * 1000
+      j++
+    }
+    else if (answer[i] == 'm') {
+      parsed[j] = parsed[j] * 1000000
+      j++
+    }
+    else if (answer[i] == 'b') {
+      parsed[j] = parsed[j] * 1000000000
+      j++
+    }
+    else if (answer[i].includes('k', 'm', 'b') == false) {
+      parsed[j] = parseFloat(answer[i])
+    }
+
+  }
+  return parsed
+
+}
+
+function scoreAnswer(key, parsedAnswer, factor) {
+  // had trouble with undefined when I used this function
+  lowerBound = parsedAnswer[0]
+  upperBound = parsedAnswer[1]
+  shift = (factor - 1) * (upperBound - lowerBound) / 2
+  // console.log(shift)
+  if (lowerBound - shift < answerKey[key] && answerKey[key] < upperBound + shift){
+    return 1
+  }
+  else {
+    return 0
+  }
+
+  // console.log(answer[0], answerKey[key], answer[1])
+}
+
+function scoreAnswers (factor){
+  score = 0
+  possibleScore = 0
+  accuracy = 1
+  for (var key in answerKey) {
+    if (answerKey.hasOwnProperty(key)) {
+      // console.log(key + " -> " + answerKey[key]);
+      var answer = urlParams.get(key)
+      if (answer != null){
+        var parsedAnswer = parseAnswer(urlParams.get(key))
+        // console.log(scoreAnswer(key, parsedAnswer, factor));
+      }
+      if (parsedAnswer != false && parsedAnswer != undefined) {
+        score += scoreAnswer(key, parsedAnswer, factor)
+        possibleScore ++
+
+        var lowerBound = parsedAnswer[0]
+        var upperBound = parsedAnswer[1]
+        var geometricMean = Math.sqrt(upperBound * lowerBound)
+        var accuracy = accuracy * Math.max(geometricMean / answerKey[key], answerKey[key] / geometricMean)
+        console.log(accuracy, lowerBound, upperBound, geometricMean, answerKey[key], key)
+      }
+    }
+  }
+  accuracy = Math.pow(accuracy, 1 / possibleScore)
+  console.log(accuracy)
+  return [score, possibleScore, accuracy]
+}
+
+// var score, possibleScore
+// console.log("possibleScore " + possibleScore)
+// console.log("score " + score)
+
+factors = [.1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.75, 2.0, 2.25, 2.5, 3, 4, 5, 6, 7, 8, 9]
+
+function findBestFactor(factors){
+  var bestFactor = 10
+  var currentCalibration = 1
+  var bestResults = []
+  for (var i = 0; i < factors.length; i++) {
+    var factor = factors[i]
+    results = scoreAnswers(factor)
+    calibration = Math.abs(.8 - results[0]/results[1])
+    // console.log(Calibration, results)
+    // console.log(Calibration)
+    if (calibration < currentCalibration || (calibration = currentCalibration && Math.abs(1 - bestFactor) > Math.abs(1 - factor))){
+    // if it's closer to 80% or equal to current with a given factor and the factor is closer to 1 update
+      console.log(factor, results)
+      bestFactor = factor
+      currentCalibration = calibration
+      bestResults = results
+    }
+  }
+  return [bestFactor, bestResults[0]/bestResults[1]]
+}
+
+console.log(findBestFactor(factors))
+// [score, possibleScore] = scoreAnswers(2.0)
+// console.log("possibleScore " + possibleScore)
+// console.log("score " + score)
+
+// ad_spend=3 - What percent of Internet...&why_voice=4 - What percent of particip...&aws_growth=5 - By what percent did Amaz...&iphone_sales=6 - What percentage of Apple...&search_mkt=7 - What percentage of deskt...&slack_prod=8 - On average, how much mor...&airbnb_hilton=9 - What's the ratio between...&bitcoin_mktcap=10 - What was the market cap...
+
+
+// console.log(parseAnswer("5b to 10m ?"))
+// console.log(parseAnswer("5"))
+// console.log(parseAnswer("5M - 10M"))
+// console.log(parseAnswer("5B -10B"))
+// console.log(parseAnswer("5k-10k"))
+// console.log(parseAnswer("2-5%"))
+// console.log(parseAnswer("5.2b to 10.7B ?"))
+
+    // - How many daily active us...&ad_spend=3 - What percent of Internet...&why_voice=4 - What percent of particip...&aws_growth=5 - By what percent did Amaz...&iphone_sales=6 - What percentage of Apple...&search_mkt=7 - What percentage of deskt...&slack_prod=8 - On average, how much mor...&airbnb_hilton=9 - What's the ratio between...&bitcoin_mktcap=10 - What was the market cap...
+
+  // param1 = 'netflix_pct'
+  // console.log(urlParams.get(param1))
+$(document).ready(function(){
+  var results = scoreAnswers(1.0)
+  var score = results[0]
+  var possibleScore = results[1]
+  var factor_results = findBestFactor(factors)
+  var factor = +factor_results[0].toFixed(2)
+  var accuracy = results[2].toFixed(1)
+
+  $('#score').text(Math.round(100 * score / possibleScore) + "% of your answers were in your 80% confidence intervals")
+  if (score/possibleScore <= .65) {
+    $('#percent').text("No worries 50% is about average here at the start. But having your 80% predictions come true " + Math.round(100 * score / possibleScore) + "% of the time is pretty confusing to all parties involved, so we need to get you calibrated before predictions can be a powerful communication and prioritization tool for you.")
+  }
+  else if (score/possibleScore <= .90) {
+    $('#percent').text("Amazing! Your 80% predictions already come true about " + Math.round(100 * score / possibleScore) + "% of the time. At this point predictions are an extremely useful communication and planning tool.")
+    //TODO add advice on what kind of predictions to make steps here https://blog.twitch.tv/flash-forecasting-f8384cfe4f6c
+  }
+  else {
+    $('#percent').text("You are a rare bird, that is underconfident. Having your 80% predictions come true " + Math.round(100 * score / possibleScore) + "% of the time is a bit confusing to all parties involved, so we need to get you calibrated before predictions can be a powerful communication and prioritization tool for you.")
+  }
+  if (factor > 1) {
+    $('#factor').text("Make your confidence intervals  " + factor + "x bigger" )
+    $('#factor_text').text("That would have made you well calibrated here (your 80% predictions come true approximately 80% of the time in reality). Once you are calibrated any confusion or awkwardness you have about probabilities and predictions should evaporate." )
+  }
+  else if (factor == 1) {
+    $('#factor').text("Don't change a thing" )
+    $('#factor_text').text("Trust in your 80% predictions. They lead to 80% in reality" )
+  }
+  else {
+    $('#factor').text("Make your confidence intervals  " + factor + " as big" )
+    $('#factor_text').text("That would have made you well calibrated here (80% prediction => 80% in reality). Once you are calibrated any confusion or awkwardness you have about probabilities and predictions should evaporate." )
+  }
+  $('#accuracy').text("The center of your intervals was on average a factor of " + accuracy + "x off the true answer" )
+  $('#accuracy_text').text("Being calibrated is the low hanging fruit of predicting the future, but being able to predict something will fit into a narrow band of outcomes (accuracy) is incredibly valuable. Gaining accuracy in the domains you actually care about is a life long pursuit. Calibration specific to your organization, domain, etc can help. danny@aforeseeablefuture.com is down to help." )
+})
+
+</script>
+
+
+  <canvas height='1' id='confetti' width='1'> </canvas>
+
+  <div class="wrapper">
+    <div class="intro">
+      <div class="logo">
+        <img src="foreseeable@0.25x.png">
+      </div>
+      <!-- <h2>You rock! </span></h2> -->
+
+      <section class="share">
+        <!-- <h1>You rock!</h1> -->
+        <h2>Predicting the future can be scary and intense, but you are well on your way.</h2>
+
+        <div class="share-buttons">
+
+          <a class="share-button fb js-share-fb">
+            <i class="fa fa-facebook-official" aria-hidden="true"></i>
+            Share it
+          </a>
+
+          <a class="share-button twitter js-share-twitter">
+            <i class="fa fa-twitter" aria-hidden="true"></i>
+            Tweet it
+          </a>
+
+        </div>
+      </section>
+    </div>
+
+    <section class="steps">
+      <h2>Your Results</h2>
+
+      <div class="step">
+        <div class="step__number"></div>
+        <div class="step__content">
+          <div class="step__headline" id=score></div>
+          <div class="step__detail" id=percent></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step__number"></div>
+        <div class="step__content">
+          <div class="step__headline" id=factor></div>
+          <div class="step__detail" id=factor_text></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step__number"></div>
+        <div class="step__content">
+          <div class="step__headline" id=accuracy>Accuracy</div>
+          <div class="step__detail" id=accuracy_text><a href="">Calculations on your accuracy</a>. </div>
+        </div>
+      </div>
+      <!-- <div class="step">
+        <div class="step__number"></div>
+        <div class="step__content">
+          <div class="step__headline">More on Predictions</div>
+          <div class="step__detail"><a href="">Checkout the rest of Danny's prediction recommendations on Medium, Twitter, and Whale</a>. </div>
+        </div>
+      </div> -->
+    </section>
+  </div>
+</body>
+</html>
