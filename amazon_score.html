@@ -482,19 +482,25 @@
 
 var urlParams = new URLSearchParams(window.location.search);
 answerKey = {
-  netflix_pct: 54,
-  fb_dau: 1200000000,
-  ad_spend: 76,
+  bezos_success: 30,
+  latency_cost: 1,
+  amzn_yoy: 27,
+  aws_yoy: 55,
+  echo_base: 10800000,
   why_voice: 61,
-  aws_growth: 55,
+  voice_bench: 95,
   iphone_sales: 69,
-  search_mkt: 80.5,
-  slack_prod: 32,
-  airbnb_hilton: 1.28,
-  bitcoin_mktcap: 16700000000,
+  netflix_monthly: 95000000,
+  fav_sport: 27,
 }
 
-//http://www.aforeseeablefuture.com/?netflix_pct=10-50&fb_dau=300M%20-%201300M&ad_spend=50%20to%2070&why_voice=60&aws_growth=35-70&iphone_sales=50%%20to%2080%&search_mkt=60%20to%2080%&slack_prod=15-40&airbnb_hilton=1.2%20to%201.6&bitcoin_mktcap=10B%20-%2014B
+//https://www.aforeseeablefuture.com/score_amazon.html?bezos_success=10-40%&latency_cost=0.1%20to%205%&amzn_yoy=27-28.5%&
+//aws_yoy=27.2%%20to%2027.3%
+//&echo_base=10M%20to%2020M&why_voice=50-90&
+//voice_bench=85%20to%2090&iphone_sales=60-90
+//&netflix_monthly=90M%20to%20150M%20
+//&fav_sport=20-23%
+// 1,2,3,4, 6, 8, 9, 10  correct
 
 function parseAnswer(answer) {
   answer = answer.toLowerCase().trim()
@@ -659,7 +665,7 @@ $(document).ready(function(){
     $('#factor_text').text("That would have made you well calibrated here (80% prediction => 80% in reality). Once you are calibrated any confusion or awkwardness you have about probabilities and predictions should evaporate." )
   }
   $('#accuracy').text("Your upper bounds were " + accuracy + "x your lower bounds" )
-  $('#accuracy_text').text("(On average). Being calibrated is the low hanging fruit of predicting the future, but being able to predict something will fit into a narrow band of outcomes (accuracy) is incredibly valuable. Gaining accuracy in the domains you actually care about is a life long pursuit. Calibration specific to your domain/organization can help. danny@aforeseeablefuture.com can show you how." )
+  $('#accuracy_text').text("(On average). Being calibrated is the low hanging fruit of predicting the future, but being able to predict something will fit into a narrow band of outcomes (accuracy) is incredibly valuable. Gaining accuracy in the domains you actually care about is a life long pursuit. Calibration specific to your domain/organization can help. danny@twitch.tv can show you how." )
 })
 
 </script>
@@ -672,13 +678,11 @@ $(document).ready(function(){
       <div class="logo">
         <img src="foreseeable@0.25x.png">
       </div>
-      <!-- <h2>You rock! </span></h2> -->
 
       <section class="share">
-        <!-- <h1>You rock!</h1> -->
-        <h2>Predicting the future can be scary and intense, but you are well on your way. Don't leave your friends behind</h2>
+        <!-- <h2>You are well on your way.</h2> -->
 
-        <div class="share-buttons">
+        <!-- <div class="share-buttons">
 
           <a class="share-button fb js-share-fb">
             <i class="fa fa-facebook-official" aria-hidden="true"></i>
@@ -690,12 +694,12 @@ $(document).ready(function(){
             Tweet it
           </a>
 
-        </div>
+        </div> -->
       </section>
     </div>
 
     <section class="steps">
-      <h2>Your Results</h2>
+      <!-- <h2>Your Results</h2> -->
 
       <div class="step">
         <div class="step__number"></div>
@@ -719,6 +723,74 @@ $(document).ready(function(){
         </div>
       </div>
     </section>
+
+
+<section class="steps">
+  <h2>Keep the Momentum Going!</h2>
+
+  <div class="step">
+    <div class="step__number"> 1 </div>
+    <div class="step__content">
+      <div class="step__headline">Share this training on amazon mailing lists </div>
+      <div class="step__detail">
+        <a href="www.aforeseeablefuture.com/amazon.html"> www.aforeseeablefuture.com/amazon.html </a>
+      </div>
+      </div>
+    </div>
+  <div class="step">
+    <div class="step__number"> 2 </div>
+    <div class="step__headline">
+      Read my article in the Harvard Business Review </div>
+    <div class="step__detail">
+      <a href="hbr.org/2017/05/how-our-company-learned-to-make-better-predictions-about-everything"> How Twitch Learned to Make Better Predictions about Everything </a>
+    </div>
   </div>
+  <div class="step">
+    <div class="step__number"> 3 </div>
+    <div class="step__headline">
+      Do my Internet overview prediction module   </div>
+    <div class="step__detail">
+      <a href="www.aforeseeablefuture.com"> www.aforeseeablefuture.com </a>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step__number"> 4 </div>
+    <div class="step__headline">
+      Order Superforecasters (book)</div>
+    <div class="step__detail">
+      <a href="https://smile.amazon.com/dp/B00RKO6MS8/"> The evidence that 20-40% foresight improvements are tractable </a>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step__number"> 5 </div>
+    <div class="step__headline">
+      Order How to Measure Anything (book)</div>
+    <div class="step__detail">
+      <a href="https://smile.amazon.com/How-Measure-Anything-Intangibles-Business-ebook/dp/B00INUYS2U/"> Good metrics, analysis, decision boundaries, and the value of information  </a>
+    </div>
+    <br>
+    <br>
+    <h2>Leverage Predictions in your day to day</h2>
+    <div class="step__detail">
+      <p>At the one end I recommend you start making predictions on the impact your most important and exciting projects
+        will have (at least quarterly). Better decisions, understanding, and communication on those projects are very high leverage.
+      <p>At the other end I recommend you use predictions to become reliable. Whenever you make committments,
+        ask yourself am I at least 80% confident I'll follow through here? When I'm not, I renegotiate immediately:
+        Actually I expect I can have that for you in 3 weeks, 1 was optimistic. Actually I can't commit to do that at all
+        because I'm super focused on x and y right now. The earlier you reset expectations the better. It's pretty easy to get other people
+        to clarify their committments in the same way. How surprised would they be if they didn't deliver that dependency on your critical path? You probably want an 80 or 90% commitment here.
+        <a href="https://blog.twitch.tv/flash-forecasting-f8384cfe4f6c"> More on that written up here. </a>
+        I can also help directly! (danny@twitch.tv)
+      <p>Good Times,
+      <br>Danny Hernandez
+    </div>
+  </div>
+</section>
+</div>
+
+</div>
+</div>
+
+
 </body>
 </html>
