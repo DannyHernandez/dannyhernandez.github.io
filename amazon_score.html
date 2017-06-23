@@ -516,25 +516,43 @@ function parseAnswer(answer) {
   }
   parsed = []
   j = 0
+    // console.log(parsed)
+  multiple = [0, 0]
+  l = 0
   for (var i = 0; i < answer.length; i++) {
     // console.log(parsed)
     if (answer[i] == 'k') {
       parsed[j] = parsed[j] * 1000
       j++
+      multiple[l] = 1000
+      l++
     }
     else if (answer[i] == 'm') {
       parsed[j] = parsed[j] * 1000000
       j++
+      multiple[l] = 1000000
+      l++
     }
     else if (answer[i] == 'b') {
       parsed[j] = parsed[j] * 1000000000
       j++
+      multiple[l] = 1000000000
+      l++
     }
     else if (answer[i].includes('k', 'm', 'b') == false) {
       parsed[j] = parseFloat(answer[i])
     }
-
   }
+
+  if (multiple[0] != multiple[1]){
+    if (multiple[0] == 0){
+      parsed[0] = parsed[0] * multiple[1]
+    }
+    if (multiple[1] == 0){
+      parsed[1] = parsed[1] * multiple[0]
+    }
+  }
+
   return parsed
 
 }
@@ -665,7 +683,7 @@ $(document).ready(function(){
     $('#factor_text').text("That would have made you well calibrated here (80% prediction => 80% in reality). Once you are calibrated any confusion or awkwardness you have about probabilities and predictions should evaporate." )
   }
   $('#accuracy').text("Your upper bounds were " + accuracy + "x your lower bounds" )
-  $('#accuracy_text').text("(On average). Being calibrated is the low hanging fruit of predicting the future, but being able to predict something will fit into a narrow band of outcomes (accuracy) is incredibly valuable. Gaining accuracy in the domains you actually care about is a life long pursuit. Calibration specific to your domain/organization can help. danny@twitch.tv can show you how." )
+  $('#accuracy_text').text("(On average). Being calibrated is the low hanging fruit of predicting the future, but being able to predict something will fit into a narrow band of outcomes (accuracy) is incredibly valuable. Gaining accuracy in the domains you actually care about is a life long pursuit. Calibration specific to your domain/org might be answer here. We could build that together. --danny@twitch.tv" )
 })
 
 </script>
