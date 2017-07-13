@@ -592,7 +592,9 @@ function scoreAnswers (factor){
         var lowerBound = parsedAnswer[0]
         var upperBound = parsedAnswer[1]
         // var geometricMean = Math.sqrt(upperBound * lowerBound)
-        accuracy = accuracy * (upperBound / lowerBound)
+        if (upperBound / lowerBound > 0 && upperBound / lowerBound < 100000 ) {
+          accuracy = accuracy * (upperBound / lowerBound)
+        }
         // var accuracy = accuracy * Math.max(geometricMean / answerKey[key], answerKey[key] / geometricMean)
         // console.log(accuracy, lowerBound, upperBound, geometricMean, answerKey[key], key)
       // }
