@@ -510,25 +510,43 @@ function parseAnswer(answer) {
   }
   parsed = []
   j = 0
+    // console.log(parsed)
+  multiple = [0, 0]
+  l = 0
   for (var i = 0; i < answer.length; i++) {
     // console.log(parsed)
     if (answer[i] == 'k') {
       parsed[j] = parsed[j] * 1000
       j++
+      multiple[l] = 1000
+      l++
     }
     else if (answer[i] == 'm') {
       parsed[j] = parsed[j] * 1000000
       j++
+      multiple[l] = 1000000
+      l++
     }
     else if (answer[i] == 'b') {
       parsed[j] = parsed[j] * 1000000000
       j++
+      multiple[l] = 1000000000
+      l++
     }
     else if (answer[i].includes('k', 'm', 'b') == false) {
       parsed[j] = parseFloat(answer[i])
     }
-
   }
+
+  if (multiple[0] != multiple[1]){
+    if (multiple[0] == 0){
+      parsed[0] = parsed[0] * multiple[1]
+    }
+    if (multiple[1] == 0){
+      parsed[1] = parsed[1] * multiple[0]
+    }
+  }
+
   return parsed
 
 }
@@ -568,7 +586,9 @@ function scoreAnswers (factor){
         var lowerBound = parsedAnswer[0]
         var upperBound = parsedAnswer[1]
         // var geometricMean = Math.sqrt(upperBound * lowerBound)
-        accuracy = accuracy * (upperBound / lowerBound)
+        if (upperBound / lowerBound > 0 && upperBound / lowerBound < 100000 ) {
+          accuracy = accuracy * (upperBound / lowerBound)
+        }
         // var accuracy = accuracy * Math.max(geometricMean / answerKey[key], answerKey[key] / geometricMean)
         // console.log(accuracy, lowerBound, upperBound, geometricMean, answerKey[key], key)
       // }
@@ -627,41 +647,40 @@ console.log(findBestFactor(factors))
 
   // param1 = 'netflix_pct'
   // console.log(urlParams.get(param1))
-$(document).ready(function(){
-  var results = scoreAnswers(1.0)
-  var score = results[0]
-  var possibleScore = results[1]
-  var factor_results = findBestFactor(factors)
-  var factor = +factor_results[0].toFixed(2)
-  var accuracy = results[2].toFixed(1)
+  $(document).ready(function(){
+    var results = scoreAnswers(1.0)
+    var score = results[0]
+    var possibleScore = results[1]
+    var factor_results = findBestFactor(factors)
+    var factor = +factor_results[0].toFixed(2)
+    var accuracy = results[2].toFixed(1)
 
-  $('#score').text(Math.round(100 * score / possibleScore) + "% of your answers were in your 80% confidence intervals")
-  if (score/possibleScore <= .65) {
-    $('#percent').text("No worries 50% is about average here at the start. But having your 80% predictions come true " + Math.round(100 * score / possibleScore) + "% of the time is pretty confusing to all parties involved, so we need to get you calibrated before predictions can be a powerful communication and prioritization tool for you.")
-  }
-  else if (score/possibleScore <= .90) {
-    $('#percent').text("Amazing! Your 80% predictions already come true about " + Math.round(100 * score / possibleScore) + "% of the time. At this point predictions are an extremely useful communication and planning tool.")
-    //TODO add advice on what kind of predictions to make steps here https://blog.twitch.tv/flash-forecasting-f8384cfe4f6c
-  }
-  else {
-    $('#percent').text("You are a rare bird, that is underconfident. Having your 80% predictions come true " + Math.round(100 * score / possibleScore) + "% of the time is a bit confusing to all parties involved, so we need to get you calibrated before predictions can be a powerful communication and prioritization tool for you.")
-  }
-  if (factor > 1) {
-    $('#factor').text("Make your confidence intervals  " + factor + "x bigger" )
-    $('#factor_text').text("That would have made you well calibrated here (your 80% predictions come true approximately 80% of the time in reality). Once you are calibrated any confusion or awkwardness you have about probabilities and predictions should evaporate." )
-  }
-  else if (factor == 1) {
-    $('#factor').text("Don't change a thing" )
-    $('#factor_text').text("Trust in your 80% predictions. They lead to 80% in reality" )
-  }
-  else {
-    $('#factor').text("Make your confidence intervals  " + factor + " as big" )
-    $('#factor_text').text("That would have made you well calibrated here (80% prediction => 80% in reality). Once you are calibrated any confusion or awkwardness you have about probabilities and predictions should evaporate." )
-  }
-  $('#accuracy').text("Your upper bounds were " + accuracy + "x your lower bounds" )
-  $('#accuracy_text').text("(On average). Being calibrated is the low hanging fruit of predicting the future, but being able to predict something will fit into a narrow band of outcomes (accuracy) is incredibly valuable. Gaining accuracy in the domains you actually care about is a life long pursuit. Calibration specific to your domain/organization can help. danny@aforeseeablefuture.com can show you how." )
-})
-
+    $('#score').text(Math.round(100 * score / possibleScore) + "% of your answers were in your 80% confidence intervals")
+    if (score/possibleScore <= .65) {
+      $('#percent').text("No worries 50% is about average here at the start. But having your 80% predictions come true " + Math.round(100 * score / possibleScore) + "% of the time is pretty confusing to all parties involved, so we need to get you calibrated before predictions can be a powerful communication and prioritization tool for you.")
+    }
+    else if (score/possibleScore <= .90) {
+      $('#percent').text("Amazing! Your 80% predictions already come true about " + Math.round(100 * score / possibleScore) + "% of the time. At this point predictions are an extremely useful communication and planning tool.")
+      //TODO add advice on what kind of predictions to make steps here https://blog.twitch.tv/flash-forecasting-f8384cfe4f6c
+    }
+    else {
+      $('#percent').text("You are a rare bird, that is underconfident. Having your 80% predictions come true " + Math.round(100 * score / possibleScore) + "% of the time is a bit confusing to all parties involved, so we need to get you calibrated before predictions can be a powerful communication and prioritization tool for you.")
+    }
+    if (factor > 1) {
+      $('#factor').text("Make your confidence intervals  " + factor + "x bigger" )
+      $('#factor_text').text("That would have made you well calibrated here (your 80% predictions come true approximately 80% of the time in reality). Once you are calibrated any confusion or awkwardness you have about probabilities and predictions should evaporate." )
+    }
+    else if (factor == 1) {
+      $('#factor').text("Don't change a thing" )
+      $('#factor_text').text("Trust in your 80% predictions. They lead to 80% in reality" )
+    }
+    else {
+      $('#factor').text("Make your confidence intervals  " + factor + " as big" )
+      $('#factor_text').text("That would have made you well calibrated here (80% prediction => 80% in reality). Once you are calibrated any confusion or awkwardness you have about probabilities and predictions should evaporate." )
+    }
+    $('#accuracy').text("Your upper bounds were " + accuracy + "x your lower bounds" )
+    $('#accuracy_text').text("(On average). Being calibrated is the low hanging fruit of predicting the future, but being able to predict something will fit into a narrow band of outcomes (accuracy) is incredibly valuable. Gaining accuracy in the domains you actually care about is a life long pursuit. Calibration specific to your domain/org might be answer here. We could build that together. --danny@twitch.tv" )
+  })
 </script>
 
 
@@ -717,6 +736,27 @@ $(document).ready(function(){
           <div class="step__headline" id=accuracy></div>
           <div class="step__detail" id=accuracy_text></a>. </div>
         </div>
+      </div>
+
+      <br>
+      <br>
+      <h2>Leverage Predictions in your day to day</h2>
+      <div class="step__detail">
+        <p>At the one end I recommend you start making predictions on the impact your most important and exciting projects
+          will have (at least quarterly). Better decisions, understanding, and communication on those projects are very high leverage.
+        <p>At the other end I recommend you use predictions to become reliable. Whenever you make committments,
+          ask yourself am I at least 80% confident I'll follow through here? When I'm not, I renegotiate immediately:
+          Actually I expect I can have that for you in 3 weeks, 1 was optimistic. Actually I can't commit to do that at all
+          because I'm super focused on x and y right now. The earlier you reset expectations the better. It's pretty easy to get other people
+          to clarify their committments in the same way. How surprised would they be if they didn't deliver that dependency on your critical path? You probably want an 80 or 90% commitment here.
+          <a href="https://blog.twitch.tv/flash-forecasting-f8384cfe4f6c"> More on that written up here. </a>
+          I can also help directly! (danny@twitch.tv)
+        <p>Good Times,
+        <br>Danny Hernandez
+        <br>
+        <br>
+        <br>
+        <br>
       </div>
     </section>
   </div>
